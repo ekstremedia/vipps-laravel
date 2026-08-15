@@ -52,25 +52,10 @@ and everything there applies unchanged here.
 composer require nesthus/vipps-laravel
 ```
 
-Until both packages are published on Packagist, point Composer at the GitHub
-repositories first. **Both entries are required**: Composer only reads the
-*root* package's `repositories`, so the bridge's own vcs entry for the SDK
-does not carry over into your app.
-
-```json
-{
-    "repositories": [
-        { "type": "vcs", "url": "https://github.com/ekstremedia/vipps-laravel" },
-        { "type": "vcs", "url": "https://github.com/ekstremedia/vipps-php" }
-    ]
-}
-```
-
-```bash
-composer require nesthus/vipps-laravel:dev-main
-```
-
-The service provider and the `Vipps` facade alias are auto-discovered.
+Both packages are on Packagist ([nesthus/vipps-laravel](https://packagist.org/packages/nesthus/vipps-laravel),
+[nesthus/vipps-php](https://packagist.org/packages/nesthus/vipps-php)), so a
+plain `composer require` is all it takes. The service provider and the
+`Vipps` facade alias are auto-discovered.
 
 ## Configuration
 
