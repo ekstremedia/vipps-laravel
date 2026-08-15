@@ -97,6 +97,20 @@ final class VippsWebhooksCommand extends Command
             return self::INVALID;
         }
 
+        // Rejected BEFORE the API call: Vipps only accepts public HTTPS
+        // callbacks, and an http:// registration (typically a dev app's
+        // http://localhost route resolved by the --url fallback) would fail
+        // only later, as undeliverable webhooks with nothing in any log.
+        if (! str_starts_with($url, 'https://')) {
+            $this->error(sprintf(
+                'Refusing to register [%s]: Vipps only accepts public HTTPS callback URLs. '
+                . 'Pass --url=https://… or set the app URL so the vipps.webhooks route resolves to https.',
+                $url,
+            ));
+
+            return self::INVALID;
+        }
+
         $events = $this->requestedEvents();
 
         // A generated idempotency key is normally banned — the SDK insists the

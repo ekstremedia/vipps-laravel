@@ -43,7 +43,7 @@ and everything there applies unchanged here.
 ## Requirements
 
 - PHP **8.3+**
-- Laravel **11 or 12**
+- Laravel **11–13** (CI exercises 12 and 13)
 - `laravel/socialite` ^5.12 (installed automatically — it is a dependency)
 
 ## Install
@@ -202,6 +202,13 @@ middleware:
 
 The middleware is also available standalone under the alias
 `vipps.webhook-signature` if you'd rather define the route yourself.
+
+**Behind a proxy, CDN or ingress?** The signature covers the *external*
+request target and `Host` header exactly as Vipps sent them, so whatever sits
+in front of your app must preserve the original host, path prefix and query
+string all the way to Laravel. A rewrite anywhere on that path — a CDN
+swapping the host, an ingress stripping a path prefix — makes every valid
+delivery fail signature verification with a 401.
 
 ### 2. Register it with Vipps
 

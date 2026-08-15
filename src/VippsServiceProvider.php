@@ -8,6 +8,7 @@ use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\Psr7\HttpFactory;
 use Illuminate\Cache\CacheManager;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Contracts\Container\Container;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -172,7 +173,11 @@ final class VippsServiceProvider extends ServiceProvider
                 return;
             }
 
-            $socialite->extend('vipps', function (Application $app): VippsSocialiteProvider {
+            // Container, not Application: Illuminate\Support\Manager hands its
+            // own container to custom creators, which is only contractually a
+            // Container — typing Application would TypeError under any
+            // non-application container.
+            $socialite->extend('vipps', function (Container $app): VippsSocialiteProvider {
                 $config = $app->make('config');
 
                 return VippsSocialiteProvider::make(
@@ -184,6 +189,15 @@ final class VippsServiceProvider extends ServiceProvider
                     scopes: (string) $config->get('vipps.login.scopes'),
                     subscriptionKey: (string) $config->get('vipps.subscription_key'),
                     merchantSerialNumber: (string) $config->get('vipps.merchant_serial_number'),
+                    // Same invariant the Vipps singleton enforces with a
+                    // LogicException, in clamp form: the login driver's Guzzle
+                    // client must never run without a deadline, so a zero,
+                    // missing or garbage config value becomes a 1-second floor
+                    // instead of Guzzle's wait-forever default. ceil(), not a
+                    // bare int cast, so a fractional 0.5s config cannot
+                    // truncate to 0.
+                    timeout: max(1, (int) ceil((float) $config->get('vipps.timeout'))),
+                    connectTimeout: max(1, (int) ceil((float) $config->get('vipps.connect_timeout'))),
                 );
             });
         });

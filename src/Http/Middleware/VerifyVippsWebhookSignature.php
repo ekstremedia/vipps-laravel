@@ -39,6 +39,14 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  *     anything else.
  *   - Rejection happens before the controller runs, so a forged delivery
  *     never dispatches an event or touches consumer code.
+ *
+ * Proxy caveat: the signature covers the EXTERNAL request target and Host
+ * header exactly as Vipps sent them, and this adapter passes the raw
+ * received values through untouched ({@see webhookRequest()}). Any proxy,
+ * CDN or ingress in front of the app must therefore preserve the original
+ * host, path prefix and query string — and trusted-proxy host rewriting
+ * must not be applied to this route — or every valid delivery fails
+ * verification with a 401.
  */
 final class VerifyVippsWebhookSignature
 {

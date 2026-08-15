@@ -2,10 +2,18 @@
 
 declare(strict_types=1);
 
+// Namespaced (with the global fallback covering it()/expect()/app()) so the
+// fixture class and function below cannot collide with same-named globals in
+// another test file — Pest loads every test file into one PHP process.
+
+namespace Nesthus\Vipps\Laravel\Tests\Feature\Console;
+
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
+use Mockery;
 use Nesthus\Vipps\Http\ApiResponse;
 use Nesthus\Vipps\Http\Transport;
 use Nesthus\Vipps\Laravel\Console\VippsWebhooksCommand;
@@ -131,14 +139,47 @@ describe('register', function () {
         // name routes during boot.
         Route::getRoutes()->refreshNameLookups();
 
+        // Testbench's default root is http://localhost, which the command
+        // rightly refuses (Vipps only accepts HTTPS callbacks) — force the
+        // https root a real production app would resolve.
+        URL::forceScheme('https');
+        URL::forceRootUrl('https://huske.test');
+
         fakeVippsTransport()->queueResponse(new ApiResponse(201, ['id' => 'wh-1', 'secret' => 's']));
 
         $exit = Artisan::call('vipps:webhooks', ['action' => 'register']);
 
         expect($exit)->toBe(0)
             ->and(fakeVippsTransport()->requests[0]['json'])->toMatchArray([
-                'url' => 'http://localhost/vipps/webhooks',
+                'url' => 'https://huske.test/vipps/webhooks',
             ]);
+    });
+
+    it('rejects an explicit non-HTTPS --url before any API call', function () {
+        $exit = Artisan::call('vipps:webhooks', [
+            'action' => 'register',
+            '--url' => 'http://insecure.example/hooks',
+        ]);
+
+        // INVALID (2), not FAILURE (1): the command was used wrongly — and
+        // nothing may have reached the wire, or a typo'd scheme would still
+        // have registered an undeliverable callback.
+        expect($exit)->toBe(2)
+            ->and(Artisan::output())->toContain('HTTPS')
+            ->and(fakeVippsTransport()->requests)->toBeEmpty();
+    });
+
+    it('rejects a route fallback that resolves to a non-HTTPS URL before any API call', function () {
+        Route::post('/vipps/webhooks', fn() => null)->name('vipps.webhooks');
+        Route::getRoutes()->refreshNameLookups();
+
+        // No URL::forceScheme here: testbench's root stays http://localhost,
+        // exactly what a dev box registers by accident without this guard.
+        $exit = Artisan::call('vipps:webhooks', ['action' => 'register']);
+
+        expect($exit)->toBe(2)
+            ->and(Artisan::output())->toContain('HTTPS')
+            ->and(fakeVippsTransport()->requests)->toBeEmpty();
     });
 
     it('fails with guidance when there is no --url and no vipps.webhooks route', function () {

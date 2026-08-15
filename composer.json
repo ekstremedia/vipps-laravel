@@ -27,15 +27,15 @@
         "illuminate/routing": "^11.0 || ^12.0 || ^13.0",
         "illuminate/support": "^11.0 || ^12.0 || ^13.0",
         "laravel/socialite": "^5.12",
-        "nesthus/vipps-php": "^0.1",
+        "nesthus/vipps-php": "^0.2",
         "psr/log": "^3.0"
     },
     "require-dev": {
         "larastan/larastan": "^3.0",
         "laravel/pint": "^1.18",
         "orchestra/testbench": "^9.0 || ^10.0 || ^11.0",
-        "pestphp/pest": "^3.0",
-        "pestphp/pest-plugin-laravel": "^3.0"
+        "pestphp/pest": "^3.0 || ^4.0",
+        "pestphp/pest-plugin-laravel": "^3.0 || ^4.0"
     },
     "autoload": {
         "psr-4": {

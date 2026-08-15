@@ -12,14 +12,21 @@ jobs:
       fail-fast: false
       matrix:
         php: ['8.3', '8.4']
-    name: PHP ${{ matrix.php }}
+        laravel: ['12.*', '13.*']
+    name: PHP ${{ matrix.php }} / Laravel ${{ matrix.laravel }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
           coverage: none
+
+      # Pin one illuminate package per leg; the framework's replace-map drags
+      # the rest of illuminate/* (and testbench 10/11 accordingly) to match.
+      - run: composer require "illuminate/support:${{ matrix.laravel }}" --no-interaction --no-update
 
       - run: composer install --prefer-dist --no-interaction --no-progress
 

@@ -2,32 +2,29 @@
 
 declare(strict_types=1);
 
+// Namespaced (with the global fallback covering it()/expect()/app()) so the
+// fixture function below cannot collide with a same-named global in another
+// test file — Pest loads every test file into one PHP process.
+
+namespace Nesthus\Vipps\Laravel\Tests\Feature\Provider;
+
 use Illuminate\Routing\Route as RoutingRoute;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Nesthus\Vipps\Laravel\Http\Controllers\VippsWebhookController;
 use Nesthus\Vipps\Laravel\Http\Middleware\VerifyVippsWebhookSignature;
+use RuntimeException;
 
 /*
  * These tests assert on the ROUTE DEFINITION only — class-string comparisons
  * via ::class literals, which PHP resolves at compile time without
  * autoloading. Deliberate: the controller and middleware behavior have their
  * own tests, and dispatching here would couple this wiring test to them.
+ * The controller ships with the package and autoloads via its PSR-4 mapping;
+ * if that ever breaks, route registration must fail loudly here (Laravel's
+ * RouteAction::makeInvokable checks method_exists on the class) rather than
+ * pass against a stub.
  */
-
-/*
- * Laravel checks method_exists($controller, '__invoke') when the route is
- * REGISTERED (RouteAction::makeInvokable), so the controller class must
- * exist even though nothing is dispatched here. When the real controller is
- * not autoloadable yet, define a no-op stand-in — via eval, never a file, so
- * an optimized composer classmap can never map the real name to a stub.
- * Once the real class ships, class_exists() finds it and this is dead code.
- */
-if (! class_exists(VippsWebhookController::class)) {
-    eval(
-        'namespace Nesthus\Vipps\Laravel\Http\Controllers;'
-        . ' final class VippsWebhookController { public function __invoke(): void {} }'
-    );
-}
 
 /**
  * @return RoutingRoute the route registered under the given name
@@ -85,7 +82,7 @@ it('registers an overridable vipps-webhooks rate limiter', function (): void {
     // without a limiter registered under its name. The provider registers a
     // default only when the app has not already claimed the name, so apps
     // can tune the limit without forking the macro.
-    expect(Illuminate\Support\Facades\RateLimiter::limiter('vipps-webhooks'))->not->toBeNull();
+    expect(RateLimiter::limiter('vipps-webhooks'))->not->toBeNull();
 });
 
 it('registers the vipps.webhook-signature middleware alias on the router', function (): void {

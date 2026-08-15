@@ -95,12 +95,11 @@ final class VippsSocialiteProvider extends AbstractProvider
      * exchange, refresh, userinfo). They are explicit parameters — not a
      * config() read inside this method — because this class stays
      * framework-decoupled and container-agnostic; the caller owns config
-     * resolution. Their defaults MUST mirror config/vipps.php
-     * (VIPPS_TIMEOUT=15 / VIPPS_CONNECT_TIMEOUT=5): the service provider's
-     * call site omits them today, so the defaults are what every real app
-     * gets. A future provider change can thread the configured values through
-     * without a signature break, but until then default-drift here would
-     * silently diverge the Socialite path from the SDK transport.
+     * resolution. The service provider threads the configured vipps.timeout /
+     * vipps.connect_timeout values through (clamped to a positive floor), so
+     * the defaults here only cover direct make() callers — they still MUST
+     * mirror config/vipps.php (VIPPS_TIMEOUT=15 / VIPPS_CONNECT_TIMEOUT=5),
+     * or default-drift would silently diverge the two paths.
      *
      * @param string $scopes space-separated OIDC scopes; blank falls back to
      *                       {@see self::DEFAULT_SCOPES} (see that constant for why)

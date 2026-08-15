@@ -6,6 +6,37 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 (0.x: the public API may still move between minor versions).
 
+## [0.2.0] - 2026-08-16
+
+### Changed
+
+- **SDK dependency raised to `nesthus/vipps-php` ^0.2.** Everything in the
+  SDK's 0.2 changelog is inherited, most visibly: `UserFlow::NativeRedirect`
+  with the correct `NATIVE_REDIRECT` wire value (0.1's `NATIVE` always failed
+  validation), ePayment `capture()`/`cancel()`/`refund()` returning the
+  adjusted `Payment` instead of `void`, non-2xx (including 3xx) and
+  malformed-JSON responses throwing instead of mapping to empty data,
+  PSR-16-portable token-cache keys, and the Recurring `Charge` v3 contract
+  (`ChargeSummary`, `failureReason`/`failureDescription`,
+  `captureCharge()` requiring an `Amount`).
+- **`vipps:webhooks register` refuses non-HTTPS callback URLs** — both an
+  explicit `--url=http://…` and a route fallback resolving to `http://…`
+  (a dev box's `http://localhost`) now exit `INVALID` before any API call.
+  Vipps only accepts public HTTPS callbacks; an `http://` registration
+  failed only later, as undeliverable webhooks with nothing in any log.
+- **Configured timeouts now reach the Socialite login driver.**
+  `vipps.timeout` / `vipps.connect_timeout` are threaded through to the
+  driver's own Guzzle client (token exchange, refresh, userinfo), clamped to
+  a positive floor so zero or missing config can never mean an unlimited
+  client. Previously apps that tuned the config still got the driver's
+  15s/5s defaults. The Socialite creator callback is also typed against
+  `Illuminate\Contracts\Container\Container` instead of the application
+  contract, matching what `Illuminate\Support\Manager` actually passes.
+- **CI now exercises a Laravel matrix** (12 and 13, on PHP 8.3 and 8.4),
+  with `pestphp/pest` / `pestphp/pest-plugin-laravel` widened to
+  `^3.0 || ^4.0` so the Laravel 13 leg can resolve, and checkout credential
+  persistence disabled.
+
 ## [0.1.0] - 2026-08-15
 
 ### Added

@@ -2,6 +2,12 @@
 
 declare(strict_types=1);
 
+// Namespaced (with the global fallback covering it()/expect()) so the fixture
+// function below cannot collide with a same-named global in another test
+// file — Pest loads every test file into one PHP process.
+
+namespace Nesthus\Vipps\Laravel\Tests\Feature\Webhooks;
+
 use Nesthus\Vipps\Laravel\Console\VippsWebhooksCommand;
 use Nesthus\Vipps\Laravel\Events\EventMap;
 

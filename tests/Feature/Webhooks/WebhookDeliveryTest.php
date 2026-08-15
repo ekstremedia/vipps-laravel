@@ -2,8 +2,15 @@
 
 declare(strict_types=1);
 
+// Namespaced (with the global fallback covering it()/expect()) so the fixture
+// function below cannot collide with a same-named global in another test
+// file — Pest loads every test file into one PHP process.
+
+namespace Nesthus\Vipps\Laravel\Tests\Feature\Webhooks;
+
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Testing\TestResponse;
 use Nesthus\Vipps\Laravel\Events\AgreementActivated;
 use Nesthus\Vipps\Laravel\Events\AgreementExpired;
 use Nesthus\Vipps\Laravel\Events\AgreementRejected;
@@ -37,7 +44,7 @@ beforeEach(function (): void {
  *
  * @param array<string, string>|null $headers
  */
-function postSignedWebhook(string $body, ?array $headers = null): Illuminate\Testing\TestResponse
+function postSignedWebhook(string $body, ?array $headers = null): TestResponse
 {
     $headers ??= WebhookSigner::headers($body);
 

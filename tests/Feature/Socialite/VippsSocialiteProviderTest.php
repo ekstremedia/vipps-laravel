@@ -247,8 +247,10 @@ it('refreshes a token with HTTP Basic auth and no client_secret in the body', fu
 });
 
 it('builds its own HTTP client with timeouts matching the config defaults', function (): void {
-    // Resolved through the REAL service-provider path, whose call site omits
-    // the timeout arguments — so this pins make()'s defaults. Without them,
+    // Resolved through the REAL service-provider path, which threads the
+    // configured vipps.timeout / vipps.connect_timeout values through — so
+    // with untouched config this pins the config/vipps.php defaults
+    // (VIPPS_TIMEOUT=15 / VIPPS_CONNECT_TIMEOUT=5). Without them,
     // AbstractProvider::getHttpClient() builds `new Client([])`, which waits
     // forever and can wedge a worker on a hung token exchange or userinfo
     // call — the exact failure the service provider refuses to allow for the
@@ -257,12 +259,34 @@ it('builds its own HTTP client with timeouts matching the config defaults', func
 
     expect($provider)->toBeInstanceOf(VippsSocialiteProvider::class);
 
-    // The literals are the invariant: make()'s defaults MUST equal the
-    // config/vipps.php defaults (VIPPS_TIMEOUT=15 / VIPPS_CONNECT_TIMEOUT=5),
-    // because the frozen provider call site means the defaults are what every
-    // real app runs with. If either side changes, this test must change with it.
     expect(vippsProviderClientOption($provider, RequestOptions::TIMEOUT))->toBe(15)
         ->and(vippsProviderClientOption($provider, RequestOptions::CONNECT_TIMEOUT))->toBe(5);
+});
+
+it('threads custom vipps.timeout and connect_timeout config through the service-provider path', function (): void {
+    // The regression this pins: registerSocialiteDriver() used to omit the
+    // timeout arguments, so apps that tuned VIPPS_TIMEOUT still got make()'s
+    // defaults on the login driver. Custom values must reach the driver's own
+    // Guzzle client via the real extend() closure, not only via direct make().
+    config()->set('vipps.timeout', 7);
+    config()->set('vipps.connect_timeout', 3);
+
+    $provider = Socialite::driver('vipps');
+
+    expect(vippsProviderClientOption($provider, RequestOptions::TIMEOUT))->toBe(7)
+        ->and(vippsProviderClientOption($provider, RequestOptions::CONNECT_TIMEOUT))->toBe(3);
+});
+
+it('clamps zero or missing timeout config to a positive floor instead of an unlimited client', function (): void {
+    // Zero/null would otherwise reach Guzzle as "no deadline" — the one value
+    // the whole package exists to forbid. The provider clamps to 1 second.
+    config()->set('vipps.timeout', 0);
+    config()->set('vipps.connect_timeout', null);
+
+    $provider = Socialite::driver('vipps');
+
+    expect(vippsProviderClientOption($provider, RequestOptions::TIMEOUT))->toBe(1)
+        ->and(vippsProviderClientOption($provider, RequestOptions::CONNECT_TIMEOUT))->toBe(1);
 });
 
 it('passes explicit timeout arguments through to its Guzzle client', function (): void {

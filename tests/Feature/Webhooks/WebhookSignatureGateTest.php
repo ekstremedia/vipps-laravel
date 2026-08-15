@@ -2,9 +2,16 @@
 
 declare(strict_types=1);
 
+// Namespaced (with the global fallback covering it()/expect()/config()) so
+// the fixture functions below cannot collide with same-named globals in
+// another test file — Pest loads every test file into one PHP process.
+
+namespace Nesthus\Vipps\Laravel\Tests\Feature\Webhooks;
+
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Testing\TestResponse;
 use Nesthus\Vipps\Laravel\Events\VippsWebhookReceived;
 use Nesthus\Vipps\Laravel\Tests\Support\WebhookSigner;
 
@@ -31,7 +38,7 @@ beforeEach(function (): void {
  *
  * @param array<string, string> $headers
  */
-function callRawWebhook(string $method, string $body, array $headers): Illuminate\Testing\TestResponse
+function callRawWebhook(string $method, string $body, array $headers): TestResponse
 {
     $server = [];
     foreach ($headers as $name => $value) {
@@ -44,7 +51,7 @@ function callRawWebhook(string $method, string $body, array $headers): Illuminat
 /**
  * @param array<string, string> $headers
  */
-function postRawWebhook(string $body, array $headers): Illuminate\Testing\TestResponse
+function postRawWebhook(string $body, array $headers): TestResponse
 {
     return callRawWebhook('POST', $body, $headers);
 }
